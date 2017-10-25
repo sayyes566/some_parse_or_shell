@@ -1,12 +1,11 @@
 
 import os, os.path
 from shutil import copyfile
-import sys
 
-file_part = sys.argv[1]
+
 #path_insert_list_by_source_file
-path_insert_list = "./insert_list1025/" + file_part + "/"
-#path_insert_list = "./insert_list1025/"
+path_insert_list = "./insert_list/"
+
 
 def fake_source_file(source_file):
     fake = source_file.replace("/usr/lib/python2.7/dist-packages/nova", "")

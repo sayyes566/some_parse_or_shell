@@ -1,0 +1,47 @@
+#!/bin/bash
+  echo "restart .............."
+  sudo service nova-api-ec2 restart;sudo service nova-cert restart;sudo service nova-consoleauth restart;sudo service nova-objectstore restart;sudo service nova-api-os-compute restart;sudo service nova-conductor restart;sudo service nova-novncproxy restart; sudo service nova-scheduler restart
+
+  echo "status .............."
+  sudo service nova-api-ec2 status;sudo service nova-cert status;sudo service nova-consoleauth status;sudo service nova-objectstore status;sudo service nova-api-os-compute status;sudo service nova-conductor status;sudo service nova-novncproxy status; sudo service nova-scheduler status
+
+  echo "status .............."
+  STATUS="$(sudo service nova-api-ec2 status;sudo service nova-cert status;sudo service nova-consoleauth status;sudo service nova-objectstore status;sudo service nova-api-os-compute status;sudo service nova-conductor status;sudo service nova-novncproxy status; sudo service nova-scheduler status)"
+ 
+  #sleep 5s 
+  echo $STATUS
+
+PROCESS="${STATUS//[!0-9 ]/}"
+echo $PROCESS
+#echo $STATUS
+
+IFS = " "
+export IFS;
+for sta in $PROCESS; do
+  #echo "!!!"  
+  size=${#sta}
+  if (($size >  4)); then
+      echo "$sta"
+  else
+     echo "not"
+     echo "$sta"
+  fi
+#done
+#compute="nova-api-os-compute start/running, process"
+
+#echo "${URL/$SRC/$REP}"
+
+#echo $template
+if pgrep -x "nova-api-os-compute"  > /dev/null
+then
+    echo "Running"
+else
+    echo "Stopped"
+fi
+
+done
+
+
+echo "$(/etc/init.d/nova-api-os-compute status)"
+
+echo "$(service --status-all)"
