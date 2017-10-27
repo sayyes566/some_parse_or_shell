@@ -34,7 +34,7 @@ do
       echo $FILE
       echo "$FILE" >> $ERROR_TXT
       python recover_file_one.py $FILE
-    
+      break
     fi
   done
 done

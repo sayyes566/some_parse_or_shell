@@ -19,10 +19,21 @@ else
     echo "Stopped"
 fi
 SERVICE="nova-api-ec2 nova-api-os-compute nova-cert nova-conductor nova-consoleauth nova-novncproxy nova-objectstore nova-scheduler"
-
+#LOG="tail /var/log/nova/".nova-scheduler.".log"
 for s in $SERVICE; do
 
   is_running=`ps aux | grep -v grep | grep $s | wc -l | awk '{print $1}'`
+  LOG=`tail /var/log/nova/"$s".log`
+ 
+  if [[ "$LOG" = *ERROR* ]] 
+  then
+    echo "ERROR"
+  elif [[ "$LOG" = *Failed* ]]  
+  then 
+    echo "Failes"
+  fi
+
+  #echo $LOG
   #echo "is running:"+$s
   echo $is_running
   sleep 2s
