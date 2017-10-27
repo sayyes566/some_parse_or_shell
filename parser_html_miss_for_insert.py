@@ -38,7 +38,7 @@ g_chek_two_line_end = False
 g_write_text = ""
 g_touch_path = "/home/ubuntu/kentzu/temp1020/"
 #stack, FIFO
-g_list_def_start_end = [] #input def start line and end line number ex:[(4,10),(15,24)..]
+g_list_def_start_miss_end = [] #input def start line, first miss line and end line number ex:[(4,6,10),(15,19,24)..]
 g_list_def_name = [] #input function name. ex:[ funcA, funcB..]
 g_list_def_return_exist = [] # input def return exist or not ex:[True, False, ...]
 g_list_def_miss_exist = [] #input def miss exist or not
@@ -66,19 +66,19 @@ class MyHTMLParser(HTMLParser):
         return False
     
     def init_stack(self):
-        global g_list_def_miss_exist, g_list_def_name,g_list_def_start_end,g_list_def_return_exist,g_list_pointer
+        global g_list_def_miss_exist, g_list_def_name,g_list_def_start_miss_end,g_list_def_return_exist,g_list_pointer
         g_list_def_name.append("")
-        g_list_def_start_end.append([0,0])
+        g_list_def_start_miss_end.append([0,0,0])
         g_list_def_return_exist.append(False)
         g_list_def_miss_exist.append(False)
         g_list_def_space.append(0)
         
     def pop_all(self):
-        global g_list_def_miss_exist, g_list_def_name,g_list_def_start_end,g_list_def_return_exist,g_list_pointer
+        global g_list_def_miss_exist, g_list_def_name,g_list_def_start_miss_end,g_list_def_return_exist,g_list_pointer
         if(len(g_list_def_name) == g_list_pointer + 1 and len(g_list_def_name) > 0):
             g_list_def_name.pop()
-        if(len(g_list_def_start_end) == g_list_pointer + 1 and len(g_list_def_start_end) > 0):
-            g_list_def_start_end.pop()
+        if(len(g_list_def_start_miss_end) == g_list_pointer + 1 and len(g_list_def_start_miss_end) > 0):
+            g_list_def_start_miss_end.pop()
         if(len(g_list_def_return_exist) == g_list_pointer + 1 and len(g_list_def_return_exist) > 0):
             g_list_def_return_exist.pop()
         if(len(g_list_def_miss_exist) == g_list_pointer + 1 and len(g_list_def_miss_exist) > 0):
@@ -86,28 +86,42 @@ class MyHTMLParser(HTMLParser):
         g_list_pointer -= 1
     
     def final_write(self):
-        global g_list_def_miss_exist, g_list_def_name,g_list_def_start_end,g_list_def_return_exist,g_list_pointer,g_miss_count,g_list_def_space,g_num_insert_lines,g_write_text
+        global g_list_def_miss_exist, g_list_def_name,g_list_def_start_miss_end,g_list_def_return_exist,g_list_pointer,g_miss_count,g_list_def_space,g_num_insert_lines,g_write_text
+        file_last_line = 0
         if g_miss_count == 0 :
             return False
         else:
+            if(g_num_insert_lines == 0): #some api does not import anything, and we just write a filepath in reday insert text file
+                g_write_text  += str(0)+ "::"+str(0)+"::import os\n" 
+                g_num_insert_lines += 1
             index = 0
             for miss in g_list_def_miss_exist:
                 if (miss):
                     if(g_list_def_return_exist[index]):
-                        start_line = g_num_insert_lines + g_list_def_start_end[index][0]
-                        end_line =  g_num_insert_lines + g_list_def_start_end[index][1]
+                        start_line = g_num_insert_lines + g_list_def_start_miss_end[index][1] -1
+                        end_line =  g_num_insert_lines + g_list_def_start_miss_end[index][2]
                         space = g_list_def_space[index] + 4
+                        if(end_line ==650):
+                            print "==3=="
                     else:
-                        start_line = g_num_insert_lines + g_list_def_start_end[index][0]
+                        start_line = g_num_insert_lines + g_list_def_start_miss_end[index][1] -1
                         if ( index + 1 == len(g_list_def_return_exist)): #last func
-                            end_line = g_now_line_number
+                            file_last_line =  g_num_insert_lines + g_now_line_number + 1
+                            end_line = file_last_line + 1
+                            if(end_line ==650):
+                                print "==2=="
+                                print g_now_line_number
                         else:
                             last = index + 1
-                            end_line =  g_list_def_start_end[last][0] - 1
+                            end_line =  (g_list_def_start_miss_end[last][0] - 1) 
                             end_line += g_num_insert_lines
+                            if(end_line ==650):
+                                print "==1=="
                         space = g_list_def_space[index] + 4
                     g_num_insert_lines += 2
                     g_write_text  += str(start_line)+ "::"+str(space)+"::os.system(\"touch "+ g_touch_path+ file_title + "_"+g_list_def_name[index]+" \")\n" 
+                    if (file_last_line >0):
+                        g_write_text  += str(file_last_line)+ "::"+str(space)+":: \n" 
                     g_write_text  += str(end_line)+ "::"+str(space)+"::os.system(\"touch "+ g_touch_path+ file_title + "_"+g_list_def_name[index]+"_end \")\n" 
                 index  += 1
             return True
@@ -115,7 +129,7 @@ class MyHTMLParser(HTMLParser):
         
     
     def reset_global(self):
-        global g_print,g_now_tag,g_now_id,g_now_class,g_now_function,g_num_tab_space_before_def,g_num_insert_lines,g_num_def_start,g_num_def_end,g_bool_find_def,g_bool_find_function,g_bool_find_t_id,g_bool_find_miss_statement,g_num_tab_space_before_data,g_now_line_number,g_pre_id,g_chek_two_line_end,g_bool_find_import,g_write_text,g_bool_find_source_file_path,g_bool_find_end,g_touch_path,mis_num,g_list_def_miss_exist, g_list_def_name,g_list_def_start_end,g_list_def_return_exist,g_list_pointer,g_miss_count
+        global g_print,g_now_tag,g_now_id,g_now_class,g_now_function,g_num_tab_space_before_def,g_num_insert_lines,g_num_def_start,g_num_def_end,g_bool_find_def,g_bool_find_function,g_bool_find_t_id,g_bool_find_miss_statement,g_num_tab_space_before_data,g_now_line_number,g_pre_id,g_chek_two_line_end,g_bool_find_import,g_write_text,g_bool_find_source_file_path,g_bool_find_end,g_touch_path,mis_num,g_list_def_miss_exist, g_list_def_name,g_list_def_start_miss_end,g_list_def_return_exist,g_list_pointer,g_miss_count
         g_write_text = ""
         g_bool_find_import = False
         g_bool_problem_file = False
@@ -142,7 +156,7 @@ class MyHTMLParser(HTMLParser):
         g_chek_two_line_end = False
         g_write_text = ""
         #stack, FIFO
-        g_list_def_start_end = [] #input def start line and end line number ex:[(4,10),(15,24)..]
+        g_list_def_start_miss_end = [] #input def start line and end line number ex:[(4,10),(15,24)..]
         g_list_def_name = [] #input function name. ex:[ funcA, funcB..]
         g_list_def_return_exist = [] # input def return exist or not ex:[True, False, ...]
         g_list_def_miss_exist = [] #input def miss exist or not
@@ -173,7 +187,7 @@ class MyHTMLParser(HTMLParser):
 
     def handle_data(self, data):
         # find html data in a line. ex: <>if a is not b:</>
-        global g_print,g_now_tag,g_now_id,g_now_class,g_now_function,g_num_tab_space_before_def,g_num_insert_lines,g_num_def_start,g_num_def_end,g_bool_find_def,g_bool_find_function,g_bool_find_t_id,g_bool_find_miss_statement,g_num_tab_space_before_data,g_now_line_number,g_pre_id,g_chek_two_line_end,g_bool_find_import,g_write_text,g_bool_find_source_file_path,g_bool_find_end,g_touch_path,mis_num,g_list_def_miss_exist, g_list_def_name,g_list_def_start_end,g_list_def_return_exist,g_list_pointer,g_list_def_space,g_miss_count
+        global g_print,g_now_tag,g_now_id,g_now_class,g_now_function,g_num_tab_space_before_def,g_num_insert_lines,g_num_def_start,g_num_def_end,g_bool_find_def,g_bool_find_function,g_bool_find_t_id,g_bool_find_miss_statement,g_num_tab_space_before_data,g_now_line_number,g_pre_id,g_chek_two_line_end,g_bool_find_import,g_write_text,g_bool_find_source_file_path,g_bool_find_end,g_touch_path,mis_num,g_list_def_miss_exist, g_list_def_name,g_list_def_start_miss_end,g_list_def_return_exist,g_list_pointer,g_list_def_space,g_miss_count
         
         
         # write: file path (api) 
@@ -196,6 +210,7 @@ class MyHTMLParser(HTMLParser):
                 g_pre_id = g_now_id
                 if(line_number.isdigit()):
                     g_now_line_number = int(line_number)
+                    
                     #print g_now_line_number
                 
                 # write: import os
@@ -217,8 +232,8 @@ class MyHTMLParser(HTMLParser):
                 #initail
                 self.init_stack()
                 #que -> (start, end=0)
-                g_list_def_start_end[g_list_pointer] = [g_now_line_number, 0] #end number inital = 0
-                print 'g_list_def_start_end', g_list_def_start_end
+                g_list_def_start_miss_end[g_list_pointer] = [g_now_line_number,0, 0] #end number inital = 0
+                print 'g_list_def_start_miss_end', g_list_def_start_miss_end
                 print  '\n'
                 g_bool_find_def = True
                 g_list_def_space[g_list_pointer] = g_num_tab_space_before_data
@@ -228,6 +243,7 @@ class MyHTMLParser(HTMLParser):
             elif (g_bool_find_def and  "nam"  in g_now_class ):
                 g_bool_find_function = True
                 #g_now_function = data
+                '''
                 if(g_list_pointer > 0):
                     #previous function's miss is exist 
                     if(self.check_miss(g_list_def_miss_exist)):
@@ -236,10 +252,11 @@ class MyHTMLParser(HTMLParser):
                         if(not self.check_return(g_list_def_return_exist)):
                             #previous function's end line didn't write
                             print "not return"
-                            if(g_list_def_start_end[-2][1] == 0):
+                            if(g_list_def_start_miss_end[-2][1] == 0):
                                 #que pre -> (start, end = now_func -1)
-                                print "$$", g_list_def_start_end[-1][0] -1
-                                g_list_def_start_end[-2][1] = (g_list_def_start_end[-1][0] -1)
+                                print "$$", g_list_def_start_miss_end[-1][0] -1
+                                g_list_def_start_miss_end[-2][1] = (g_list_def_start_miss_end[-1][0] -1)
+                '''
                     #else:
                         # previous function is not miss than pop all
                         #print "pop all"
@@ -256,6 +273,7 @@ class MyHTMLParser(HTMLParser):
                 print  '\n'
                 print "g_list_def_name", g_list_def_name
                 print  '\n'
+            
             #?. find class or any other space < 4, than fake return = 0      
             elif g_list_pointer >= 0 and g_num_tab_space_before_data <= g_list_def_space[g_list_pointer] and g_now_class[1] != "pln" and g_now_class[1] !="strut":
                 
@@ -263,8 +281,9 @@ class MyHTMLParser(HTMLParser):
                     if(not self.check_return(g_list_def_return_exist)):
                         print "?????????????", g_num_tab_space_before_data, g_now_line_number, g_now_class
                         print data
+                        print g_list_def_start_miss_end
                         g_list_def_return_exist[g_list_pointer] = True
-                        g_list_def_start_end[-1][1] = g_now_line_number 
+                        g_list_def_start_miss_end[-1][2] = g_now_line_number 
                     
                     
             #4. find return   
@@ -273,7 +292,7 @@ class MyHTMLParser(HTMLParser):
                 if(self.check_miss(g_list_def_miss_exist)):
                     g_list_def_return_exist[g_list_pointer] = True
                     print "wwwwwwwwwwwwwwwwww"
-                    g_list_def_start_end[-1][1] = g_now_line_number
+                    g_list_def_start_miss_end[-1][2] = g_now_line_number
                 #else:
                     # previous function is not miss than pop all
                     #self.pop_all()
@@ -282,14 +301,17 @@ class MyHTMLParser(HTMLParser):
                 #g_bool_find_end = True
                 
           
-            
+            if(g_bool_find_function and g_list_def_space[g_list_pointer]+4 == g_num_tab_space_before_data ):
+               g_list_def_start_miss_end[-1][1] = g_now_line_number
+               g_bool_find_function = False
                 
             #3. check if miss line in this function 
             if ("stm mis" in g_now_class and not g_bool_find_miss_statement):
                 print "*==xxxxxxxxxxxxx", str(g_now_line_number)
                 print g_list_pointer
                 print g_write_text
-                if(g_list_pointer >= 0 and len(g_list_def_start_end) == g_list_pointer+1):
+                if(g_list_pointer >= 0 and len(g_list_def_start_miss_end) == g_list_pointer+1):
+                    #g_list_def_start_miss_end[-1][1] = g_now_line_number
                     g_bool_find_miss_statement = True
                     g_miss_count += 1
                     g_list_def_miss_exist[g_list_pointer] = True
@@ -334,7 +356,7 @@ paths = []
 #paths.append('/home/kristen/python_parse/testcase/controller_test')
 paths.append('/home/kristen/python_parse/testcase/controller1024')
 
-paths.append('/home/kristen/python_parse/testcase/fake_3')
+#paths.append('/home/kristen/python_parse/testcase/fake_3')
 for index in range(len(paths)):
     path = paths[index]
     print "path     :", path
@@ -360,7 +382,7 @@ for index in range(len(paths)):
             # read file
             f = open(path +"/" +filename, "r")
             parser.feed(f.read())
-            print "g_list_def_start_end",g_list_def_start_end 
+            print "g_list_def_start_miss_end",g_list_def_start_miss_end 
             print '\n'
             print "g_list_def_name", g_list_def_name 
             print '\n'
